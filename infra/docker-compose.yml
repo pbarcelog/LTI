@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lti}
+      POSTGRES_USER: ${POSTGRES_USER:-lti}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lti}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lti -d lti"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ../backend
+    environment:
+      DEBUG: "1"
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me}
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-lti}
+      DB_USER: ${POSTGRES_USER:-lti}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-lti}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../backend:/app
+
+  frontend:
+    build:
+      context: ../frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+
+volumes:
+  postgres_data:
+
