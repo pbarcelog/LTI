@@ -1,0 +1,129 @@
+---
+description: Backend development standards for the LTI Django application — API patterns, Django ORM, PostgreSQL, testing, security, and workflow
+globs:
+  - "backend/**/*.py"
+  - "backend/**/requirements*.txt"
+  - "backend/**/pyproject.toml"
+  - "backend/manage.py"
+alwaysApply: true
+---
+
+# Backend Standards — Django + PostgreSQL
+
+## Overview
+
+The LTI backend is **Django** talking to **PostgreSQL**, as defined in `docs/architecture.md`. Keep the API minimal until product scope expands; prefer Django conventions and the built-in ORM.
+
+## Technology Stack
+
+- **Runtime**: Python 3.x (project pin in `requirements.txt` or `pyproject.toml`)
+- **Framework**: Django
+- **Database**: PostgreSQL (local or via Docker Compose in `infra/`)
+- **Migrations**: Django migrations (`makemigrations` / `migrate`)
+
+## Project Layout (expected)
+
+```
+backend/
+├── manage.py
+├── requirements.txt          # or pyproject.toml
+├── <project_name>/           # Django project package
+│   ├── settings.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+└── <apps>/                   # Django apps (features)
+    ├── models.py
+    ├── views.py
+    ├── urls.py
+    ├── serializers.py        # if using Django REST Framework (when adopted)
+    └── tests/
+```
+
+Adjust names to match the scaffold; the important part is **project package + apps**, not a Node-style `src/` tree.
+
+## Configuration
+
+- Read **secrets and DB credentials from environment variables** (e.g. `DATABASE_URL` or `DB_*`), not committed values.
+- Use `DEBUG=False`-safe defaults for production-oriented settings; document required env vars in `docs/` or root `README.md`.
+- Enable **CORS** only as needed for the Vite dev server origin when the frontend calls the API.
+
+## API Design
+
+- Prefer **RESTful** URLs and correct HTTP verbs where applicable.
+- Return **JSON** for API responses; use consistent error payloads (e.g. `{"detail": "..."}` or project convention).
+- Map errors to appropriate status codes: `400` validation, `404` not found, `401`/`403` auth when applicable, `500` unexpected server errors.
+- Implement a **`/health/`** (or `/api/health/`) endpoint that returns `200` when the app (and optionally DB) is reachable.
+
+## Django ORM
+
+- Define models in `models.py`; keep fields aligned with `docs/data-model.md` and `ai-specs/ai-specs/specs/data-model.md` when they diverge, update specs.
+- Use **migrations** for every schema change; do not hand-edit applied migration history.
+- Use **`select_related` / `prefetch_related`** when listing related objects to avoid N+1 queries.
+- Validate business rules in **model `clean()`**, **forms**, or **serializers** — not scattered in views only.
+
+## Views and URLs
+
+- Keep **views thin**: parse request → call service or queryset logic → return `JsonResponse` / DRF `Response`.
+- Register routes in app `urls.py` and include them from the project `urls.py`.
+- When the project adopts **Django REST Framework**, prefer `APIView` / `ViewSet` + routers per team convention.
+
+## Testing
+
+- Use **`django.test.TestCase`** or **pytest-django** if the project standardizes on pytest.
+- Test **happy path, validation errors, and 404** for new endpoints.
+- For DB-dependent tests, use Django’s test database; avoid hitting production PostgreSQL.
+
+## Security
+
+- Never commit **`.env`**, keys, or production credentials.
+- Use Django’s **CSRF** protection for session-based flows; for token APIs, follow the project’s auth approach once defined.
+- **Validate and sanitize** all user input; prefer Django forms/serializers over ad-hoc `request.POST` parsing.
+
+## Logging
+
+- Use the **`logging`** module; log unexpected exceptions with stack traces in development.
+- Keep log messages in **English** (per `base-standards.mdc`).
+
+## Type Hints
+
+- Use **Python type hints** on public functions, view helpers, and service layers as the project matures (aligned with global type-safety expectations in `base-standards.mdc`).
+
+## Development Workflow
+
+### Git Workflow
+
+- Use **feature branches** named after the ticket when applicable, e.g. `feature/TICKET-123-backend`.
+- Write **clear, English commit messages** (imperative subject line).
+- Keep commits **small and focused** on one task.
+
+### Local Commands (reference)
+
+```bash
+cd backend
+python -m venv .venv
+# activate venv (OS-specific)
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+```
+
+### Quality Checks
+
+- Run **tests** before opening a PR.
+- Use **Ruff** or **flake8** / **black** if configured in the repo; follow project `pyproject.toml` or CI.
+
+## Documentation Updates
+
+When changing behavior or schema:
+
+- **Models / domain** → `docs/data-model.md` and `ai-specs/ai-specs/specs/data-model.md` as agreed by the team.
+- **HTTP API** → `ai-specs/ai-specs/specs/api-spec.yml` if the project maintains OpenAPI.
+- **Run / deploy** → `docs/architecture.md`, root `README.md`, or `ai-specs/ai-specs/specs/development_guide.md`.
+
+## References
+
+- Product context: `docs/product-context.md`
+- Architecture: `docs/architecture.md`
+- [Documentation Standards](./documentation-standards.mdc)
+- [Base Standards](./base-standards.mdc)

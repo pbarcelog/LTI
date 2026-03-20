@@ -1,0 +1,110 @@
+---
+description: Frontend development standards for the LTI React + Vite application — components, styling, API access, testing, and workflow
+globs:
+  - "frontend/**/*.{tsx,ts,jsx,js}"
+  - "frontend/vite.config.*"
+  - "frontend/index.html"
+  - "frontend/package.json"
+alwaysApply: true
+---
+
+# Frontend Standards — React + Vite
+
+## Overview
+
+The LTI frontend is **React** with **Vite** as the build tool and dev server, per `docs/architecture.md`. Keep the UI minimal until features are specified; avoid unnecessary dependencies.
+
+## Technology Stack
+
+- **UI**: React (functional components + hooks)
+- **Build / dev**: Vite
+- **Language**: **TypeScript** preferred for new code; align with `base-standards.mdc` type-safety expectations
+- **Styling**: Plain CSS, CSS Modules, or a single chosen approach documented in the repo — do not assume Create React App or Bootstrap unless the project adds them
+
+## Project Layout (expected)
+
+```
+frontend/
+├── index.html
+├── vite.config.ts          # or .js
+├── package.json
+├── public/
+└── src/
+    ├── main.tsx
+    ├── App.tsx
+    ├── assets/
+    ├── components/
+    ├── services/           # API client modules (optional but recommended)
+    └── styles/             # global styles (optional)
+```
+
+## Environment Variables
+
+- Vite exposes variables prefixed with **`VITE_`** (e.g. `VITE_API_BASE_URL`).
+- Never commit secrets; document required variables in `README.md` or `docs/`.
+
+## Components
+
+- Use **functional components** and hooks (`useState`, `useEffect`, `useCallback`, `useMemo` as needed).
+- Keep **presentational** vs **container** logic clear; extract reusable pieces under `src/components/`.
+- Name components **PascalCase**; hooks and utilities **camelCase**.
+- All user-visible strings and comments in **English**.
+
+## Data Fetching
+
+- Prefer **`fetch`** or a single HTTP client if the team standardizes (e.g. axios). Centralize base URL and error handling in `src/services/`.
+- Handle **loading**, **error**, and **empty** states explicitly.
+- Type **API responses** with TypeScript interfaces or types where possible.
+
+## Routing
+
+- If the app needs multiple pages, use **React Router** (or Vite-compatible file-based routing) only when added to the project; document the choice in `README.md`.
+- For the initial **“Hello LTI”** skeleton, a single view may be enough.
+
+## Testing
+
+- **Unit / component tests**: **Vitest** + **React Testing Library** when configured.
+- **E2E**: Add **Playwright** or **Cypress** only when the project scaffold includes them; otherwise document as future work.
+
+## Accessibility
+
+- Use semantic HTML (`button`, `label`, `nav`, etc.).
+- Ensure interactive elements are keyboard-focusable; associate labels with form controls.
+- Do not rely on color alone for meaning.
+
+## Performance
+
+- Avoid unnecessary re-renders (stable dependencies in `useEffect`, memoization when measured bottlenecks exist).
+- Lazy-load routes or heavy components when the app grows.
+
+## Development Workflow
+
+### Git Workflow
+
+- Feature branches, e.g. `feature/TICKET-456-frontend`.
+- English commit messages; small, focused commits.
+
+### Local Commands (reference)
+
+```bash
+cd frontend
+npm install
+npm run dev
+npm run build
+npm run test        # if configured
+```
+
+### Linting / Formatting
+
+- Follow **ESLint** and **Prettier** (or project equivalents) in `package.json` / CI.
+
+## Documentation Updates
+
+- New **dependencies or build config** → update `README.md` and this file if conventions change.
+- **API contract** changes consumed by the UI → coordinate with `ai-specs/ai-specs/specs/api-spec.yml` and backend docs.
+
+## References
+
+- Architecture: `docs/architecture.md`
+- [Documentation Standards](./documentation-standards.mdc)
+- [Base Standards](./base-standards.mdc)

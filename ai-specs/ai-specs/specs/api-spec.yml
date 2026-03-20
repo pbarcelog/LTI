@@ -1,0 +1,87 @@
+openapi: 3.0.3
+info:
+  title: LTI API
+  description: |
+    HTTP API for the LTI recruitment platform. The backend is implemented with **Django**
+    (see `docs/architecture.md`). This document describes the contract exposed to the
+    **React + Vite** frontend and other clients.
+
+    **Skeleton phase:** only the health check is required to verify that Django is running.
+    Additional resources (`/api/v1/...`) will be documented here as features are implemented.
+  version: 0.1.0
+  contact:
+    name: LTI Development Team
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local Django development server (`runserver`)
+  - url: http://localhost:8000
+    description: Alternate local host
+
+tags:
+  - name: Health
+    description: Service availability
+  - name: API
+    description: Application API (to be expanded)
+
+paths:
+  /health/:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: |
+        Returns **200** when the Django application process is up. Optionally extend the
+        implementation to verify database connectivity and return **503** if the DB is unreachable.
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                ok:
+                  value:
+                    status: ok
+                    service: lti-backend
+        '503':
+          description: Service unhealthy (e.g. database unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+          description: Logical service name
+          example: lti-backend
+        database:
+          type: string
+          description: Optional DB check result, e.g. `ok` or `unavailable`
+          example: ok
+
+    ErrorResponse:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Human-readable error (English)
+        code:
+          type: string
+          description: Optional machine-readable error code
+
+  securitySchemes: {}
+
+security: []
